@@ -18,6 +18,22 @@ const corsOptions = {
   app.use(cookieParser())
   app.use(morgan('dev'))
 
+  const verifyToken = async (req, res, next) => {
+    const token = req.cookies?.token
+    console.log(token)
+    if (!token) {
+      return res.status(401).send({ message: 'unauthorized access' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        console.log(err)
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      req.user = decoded
+      next()
+    })
+  }
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.crgl3kb.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
@@ -30,7 +46,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const userCollection = client.db("stayVistaDB").collection("users");
+    const usersCollection = client.db("stayVistaDB").collection("users");
     const roomCollection = client.db("stayVistaDB").collection("rooms");
 
     app.post('/jwt', async (req, res) => {
@@ -71,7 +87,7 @@ async function run() {
         const isExist = await usersCollection.findOne(query)
         console.log('User found?----->', isExist)
         if (isExist) return res.send(isExist)
-        const result = await userCollection.updateOne(
+        const result = await usersCollection.updateOne(
           query,
           {
             $set: { ...user, timestamp: Date.now() },
@@ -81,8 +97,20 @@ async function run() {
         res.send(result)
       })
 
+      app.get('/user/:email', async(req, res)=>{
+        const email = req.params.email
+        const result = await usersCollection.findOne({email})
+        res.send(result)
+      })
+
       app.get('/rooms', async(req, res)=>{
         const result = await roomCollection.find().toArray()
+        res.send(result)
+      })
+
+      app.get('/rooms/:email', async(req, res)=>{
+        const email = req.params.email
+        const result = await roomCollection.find({'host?.email': email}).toArray()
         res.send(result)
       })
 
@@ -90,6 +118,12 @@ async function run() {
         const id = req.params.id 
         const query = {id : new ObjectId(id)}
         const result = await roomCollection.findOne(query)
+        res.send(result)
+      })
+
+      app.post('/rooms', verifyToken, async(req, res) => {
+        const room = req.body 
+        const result = await roomCollection.insertOne(room)
         res.send(result)
       })
 
