@@ -121,9 +121,9 @@ async function run() {
         res.send(result)
       })
 
-      app.post('/rooms', verifyToken, async(req, res) => {
-        const room = req.body 
-        const result = await roomCollection.insertOne(room)
+      app.get('/room/:id', async (req, res) => {
+        const id = req.params.id
+        const result = await roomCollection.findOne({ _id: new ObjectId(id) })
         res.send(result)
       })
 
