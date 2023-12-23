@@ -40,7 +40,7 @@ const corsOptions = {
 
   // Send email
 const sendEmail = (emailAddress, emailData) => {
-  //Create a transporter
+          //Create a transporter
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
@@ -52,7 +52,7 @@ const sendEmail = (emailAddress, emailData) => {
     },
   })
 
-    //verify connection
+            //verify connection
     transporter.verify((error, success) => {
       if (error) {
         console.log(error)
